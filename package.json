@@ -1,0 +1,14 @@
+{
+  "name": "@yuristrelets/wysiwyg-task",
+  "version": "0.1.0",
+  "repository": "https://github.com/yuristrelets/wysiwig-task.git",
+  "author": "Yuri Strelets <yuristrelets@gmail.com>",
+  "license": "MIT",
+  "scripts": {
+    "build": "esbuild src/index.js --bundle --outfile=js/editor.js"
+  },
+  "devDependencies": {
+    "esbuild": "^0.8.36",
+    "prettier": "^2.2.1"
+  }
+}
