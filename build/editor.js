@@ -41,39 +41,28 @@
     return document.createDocumentFragment();
   }
 
-  // src/rangeToFragmentWithStyles.js
+  // src/applyComputedInlineStyles.js
   var supportedStyleProps = [
     "color",
     "font-size",
     "font-style",
-    "font-variant",
     "font-weight",
     "font-family",
-    "line-height",
-    "text-decoration",
+    "font-variant",
     "text-transform",
-    "margin"
+    "text-decoration",
+    "line-height"
   ];
   function applyComputedInlineStyles(node) {
     if (node.nodeType !== Node.ELEMENT_NODE)
       return;
-    const computedStyle = window.getComputedStyle(node);
-    supportedStyleProps.forEach((prop) => {
-      node.style.setProperty(prop, computedStyle.getPropertyValue(prop));
-    });
+    if (node.tagName.toLowerCase() in tagToClassNameMap) {
+      const computedStyle = window.getComputedStyle(node);
+      supportedStyleProps.forEach((prop) => {
+        node.style.setProperty(prop, computedStyle.getPropertyValue(prop));
+      });
+    }
     [...node.childNodes].forEach((child) => applyComputedInlineStyles(child));
-  }
-  function removeInlineStyles(node) {
-    if (node.nodeType !== Node.ELEMENT_NODE)
-      return;
-    node.removeAttribute("style");
-    [...node.childNodes].forEach((child) => removeInlineStyles(child));
-  }
-  function rangeToFragmentWithStyles(rootNode, range, cutMode = false) {
-    applyComputedInlineStyles(rootNode);
-    const fragment = cutMode ? range.extractContents() : range.cloneContents();
-    removeInlineStyles(rootNode);
-    return fragment;
   }
 
   // src/utils.js
@@ -140,6 +129,7 @@
         node.appendChild(range.extractContents());
         range.insertNode(node);
       }
+      applyComputedInlineStyles(editorElement);
       editorElement.focus();
     }
   }
@@ -169,32 +159,17 @@
         [...range.extractContents().childNodes].forEach((child) => {
           if (isBlockNode(child)) {
             node.appendChild(document.createTextNode(child.textContent));
+            node.appendChild(document.createElement("br"));
           } else {
             node.appendChild(child);
           }
         });
         range.insertNode(node);
       }
+      applyComputedInlineStyles(editorElement);
       editorElement.focus();
     }
   }
-  function selectionToClipboard(event, cutMode = false) {
-    const {selection, range} = getEditorHighlight();
-    if (range) {
-      const result = document.createElement("div");
-      result.appendChild(rangeToFragmentWithStyles(editorElement, range, cutMode));
-      event.clipboardData.setData(plainMimeType, selection.toString());
-      event.clipboardData.setData(htmlMimeType, result.innerHTML);
-    }
-  }
-  editorElement.addEventListener("copy", (event) => {
-    event.preventDefault();
-    selectionToClipboard(event);
-  });
-  editorElement.addEventListener("cut", (event) => {
-    event.preventDefault();
-    selectionToClipboard(event, true);
-  });
   editorElement.addEventListener("focus", () => {
     const {selection} = getEditorHighlight();
     ensureContentWrapped(editorElement, selection);
@@ -208,6 +183,9 @@
   });
   editorElement.addEventListener("paste", (event) => {
     event.preventDefault();
+    const {range} = getEditorHighlight();
+    if (!range)
+      return;
     const fragment = document.createDocumentFragment();
     const html = event.clipboardData.getData(htmlMimeType);
     if (html) {
@@ -223,13 +201,11 @@
         fragment.appendChild(div);
       });
     }
-    const {range} = getEditorHighlight();
-    if (!range)
-      return;
     if (!range.collapsed)
       range.deleteContents();
     range.insertNode(fragment);
     range.collapse();
+    applyComputedInlineStyles(editorElement);
   });
   boldButtonElement.addEventListener("click", () => {
     formatInline("b", tagToClassNameMap.b);

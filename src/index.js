@@ -1,6 +1,6 @@
 import { tagToClassNameMap, plainMimeType, htmlMimeType } from './constants';
 import { sanitizeNode } from './sanitizeNode';
-import { rangeToFragmentWithStyles } from './rangeToFragmentWithStyles';
+import { applyComputedInlineStyles } from './applyComputedInlineStyles';
 import { createElement, isBlockNode, getParentBlockNode, ensureContentWrapped } from './utils';
 
 const editorElement = document.querySelector('.edit-area');
@@ -42,6 +42,7 @@ function formatInline(tagName, className) {
       range.insertNode(node);
     }
 
+    applyComputedInlineStyles(editorElement);
     editorElement.focus();
   }
 }
@@ -80,6 +81,7 @@ function formatHeader(tagName, className) {
         // avoiding block nodes inside headers
         if (isBlockNode(child)) {
           node.appendChild(document.createTextNode(child.textContent));
+          node.appendChild(document.createElement('br'));
         } else {
           node.appendChild(child);
         }
@@ -88,35 +90,10 @@ function formatHeader(tagName, className) {
       range.insertNode(node);
     }
 
+    applyComputedInlineStyles(editorElement);
     editorElement.focus();
   }
 }
-
-function selectionToClipboard(event, cutMode = false) {
-  const { selection, range } = getEditorHighlight();
-
-  if (range) {
-    const result = document.createElement('div');
-    result.appendChild(rangeToFragmentWithStyles(editorElement, range, cutMode));
-
-    event.clipboardData.setData(plainMimeType, selection.toString());
-    event.clipboardData.setData(htmlMimeType, result.innerHTML);
-  }
-}
-
-// editor event handlers
-
-editorElement.addEventListener('copy', (event) => {
-  event.preventDefault();
-
-  selectionToClipboard(event);
-});
-
-editorElement.addEventListener('cut', (event) => {
-  event.preventDefault();
-
-  selectionToClipboard(event, true);
-});
 
 editorElement.addEventListener('focus', () => {
   const { selection } = getEditorHighlight();
@@ -136,6 +113,10 @@ editorElement.addEventListener('drop', (event) => {
 
 editorElement.addEventListener('paste', (event) => {
   event.preventDefault();
+
+  const { range } = getEditorHighlight();
+
+  if (!range) return;
 
   const fragment = document.createDocumentFragment();
   const html = event.clipboardData.getData(htmlMimeType);
@@ -158,14 +139,12 @@ editorElement.addEventListener('paste', (event) => {
     });
   }
 
-  const { range } = getEditorHighlight();
-
-  if (!range) return;
-
   if (!range.collapsed) range.deleteContents();
 
   range.insertNode(fragment);
   range.collapse();
+
+  applyComputedInlineStyles(editorElement);
 });
 
 // buttons event handlers
