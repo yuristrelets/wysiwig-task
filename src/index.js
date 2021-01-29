@@ -57,7 +57,7 @@ function formatHeader(tagName, className) {
       // if there is no selected range
       // looking for closest parent block node and apply to entire node
       const { startOffset, startContainer } = range;
-      const parentNode = getParentBlockNode(range.startContainer);
+      const parentNode = getParentBlockNode(range.startContainer, editorElement);
 
       if (parentNode) {
         range.selectNodeContents(parentNode);

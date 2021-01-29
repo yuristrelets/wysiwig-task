@@ -139,7 +139,7 @@
       const node = createElement(tagName, className);
       if (range.collapsed) {
         const {startOffset, startContainer} = range;
-        const parentNode = getParentBlockNode(range.startContainer);
+        const parentNode = getParentBlockNode(range.startContainer, editorElement);
         if (parentNode) {
           range.selectNodeContents(parentNode);
           node.appendChild(range.extractContents());
