@@ -5,7 +5,7 @@
   "author": "Yuri Strelets <yuristrelets@gmail.com>",
   "license": "MIT",
   "scripts": {
-    "build": "esbuild src/index.js --bundle --outfile=js/editor.js"
+    "build": "esbuild src/index.js --bundle --outfile=build/editor.js"
   },
   "devDependencies": {
     "esbuild": "^0.8.36",
