@@ -1,7 +1,7 @@
 import { tagToClassNameMap, plainMimeType, htmlMimeType } from './constants';
 import { sanitizeNode } from './sanitizeNode';
 import { applyComputedInlineStyles } from './applyComputedInlineStyles';
-import { createElement, isBlockNode, getParentBlockNode, ensureContentWrapped } from './utils';
+import { createElement, getParentBlockNode, ensureContentWrapped } from './utils';
 
 const editorElement = document.querySelector('.edit-area');
 const h1ButtonElement = document.querySelector('.head-1');
@@ -42,7 +42,6 @@ function formatInline(tagName, className) {
       range.insertNode(node);
     }
 
-    applyComputedInlineStyles(editorElement);
     editorElement.focus();
   }
 }
@@ -77,20 +76,10 @@ function formatHeader(tagName, className) {
         range.collapse();
       }
     } else {
-      [...range.extractContents().childNodes].forEach((child) => {
-        // avoiding block nodes inside headers
-        if (isBlockNode(child)) {
-          node.appendChild(document.createTextNode(child.textContent));
-          node.appendChild(document.createElement('br'));
-        } else {
-          node.appendChild(child);
-        }
-      });
-
+      node.appendChild(range.extractContents());
       range.insertNode(node);
     }
 
-    applyComputedInlineStyles(editorElement);
     editorElement.focus();
   }
 }
@@ -109,6 +98,14 @@ editorElement.addEventListener('input', () => {
 
 editorElement.addEventListener('drop', (event) => {
   event.preventDefault();
+});
+
+editorElement.addEventListener('copy', () => {
+  applyComputedInlineStyles(editorElement);
+});
+
+editorElement.addEventListener('cut', () => {
+  applyComputedInlineStyles(editorElement);
 });
 
 editorElement.addEventListener('paste', (event) => {
@@ -143,8 +140,6 @@ editorElement.addEventListener('paste', (event) => {
 
   range.insertNode(fragment);
   range.collapse();
-
-  applyComputedInlineStyles(editorElement);
 });
 
 // buttons event handlers

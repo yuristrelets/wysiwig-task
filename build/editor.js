@@ -53,7 +53,13 @@
     "text-decoration",
     "line-height"
   ];
-  function applyComputedInlineStyles(node) {
+  function removeInlineStyles(node) {
+    if (node.nodeType !== Node.ELEMENT_NODE)
+      return;
+    node.removeAttribute("style");
+    [...node.childNodes].forEach((child) => removeInlineStyles(child));
+  }
+  function addComputedInlineStyles(node) {
     if (node.nodeType !== Node.ELEMENT_NODE)
       return;
     if (node.tagName.toLowerCase() in tagToClassNameMap) {
@@ -63,6 +69,10 @@
       });
     }
     [...node.childNodes].forEach((child) => applyComputedInlineStyles(child));
+  }
+  function applyComputedInlineStyles(node) {
+    addComputedInlineStyles(node);
+    setTimeout(() => removeInlineStyles(node), 0);
   }
 
   // src/utils.js
@@ -129,7 +139,6 @@
         node.appendChild(range.extractContents());
         range.insertNode(node);
       }
-      applyComputedInlineStyles(editorElement);
       editorElement.focus();
     }
   }
@@ -156,17 +165,9 @@
           range.collapse();
         }
       } else {
-        [...range.extractContents().childNodes].forEach((child) => {
-          if (isBlockNode(child)) {
-            node.appendChild(document.createTextNode(child.textContent));
-            node.appendChild(document.createElement("br"));
-          } else {
-            node.appendChild(child);
-          }
-        });
+        node.appendChild(range.extractContents());
         range.insertNode(node);
       }
-      applyComputedInlineStyles(editorElement);
       editorElement.focus();
     }
   }
@@ -180,6 +181,12 @@
   });
   editorElement.addEventListener("drop", (event) => {
     event.preventDefault();
+  });
+  editorElement.addEventListener("copy", () => {
+    applyComputedInlineStyles(editorElement);
+  });
+  editorElement.addEventListener("cut", () => {
+    applyComputedInlineStyles(editorElement);
   });
   editorElement.addEventListener("paste", (event) => {
     event.preventDefault();
@@ -205,7 +212,6 @@
       range.deleteContents();
     range.insertNode(fragment);
     range.collapse();
-    applyComputedInlineStyles(editorElement);
   });
   boldButtonElement.addEventListener("click", () => {
     formatInline("b", tagToClassNameMap.b);

@@ -13,7 +13,15 @@ const supportedStyleProps = [
   'line-height',
 ];
 
-export function applyComputedInlineStyles(node) {
+function removeInlineStyles(node) {
+  if (node.nodeType !== Node.ELEMENT_NODE) return;
+
+  node.removeAttribute('style');
+
+  [...node.childNodes].forEach((child) => removeInlineStyles(child));
+}
+
+function addComputedInlineStyles(node) {
   if (node.nodeType !== Node.ELEMENT_NODE) return;
 
   if (node.tagName.toLowerCase() in tagToClassNameMap) {
@@ -25,4 +33,10 @@ export function applyComputedInlineStyles(node) {
   }
 
   [...node.childNodes].forEach((child) => applyComputedInlineStyles(child));
+}
+
+export function applyComputedInlineStyles(node) {
+  addComputedInlineStyles(node);
+
+  setTimeout(() => removeInlineStyles(node), 0);
 }
